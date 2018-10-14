@@ -1,0 +1,21 @@
+<a href={% url 'formulaire_mini_urls' %}> Lien vers la création de mini url </a>
+
+
+<h1> Liste des mini urls </h1>
+<ul>
+  {% for mini_url in mini_urls %}
+
+      <li class="miniUrl">
+        <a href="{% url "url_update" mini_url.code %}">Mettre à jour</a> -
+
+        <a href="{% url "url_delete" mini_url.code %}">Supprimer</a>
+        <p>{{ mini_url.url }} via
+          <a target="_blank" href= {% url 'redirection_mini' mini_url.code %}>{{ request.get_host }}/m/{{mini_url.code}}</a>
+            {% if mini_url.pseudo %} par {{mini_url.pseudo}} {% endif %}
+             ({{mini_url.nombre_acces}} acces)<p>
+      </li>
+
+  {% empty %}
+      <li>Aucune mini url.</li>
+  {% endfor %}
+</ul>

@@ -1,0 +1,8 @@
+<h1>Liste des contacts</h1>
+
+{% for contact in contacts %}
+    <h2>{{ contact.nom }}</h2>
+    {# linebreak autorise le retour à la ligne inclut dans une chaine de caractère #}
+    Adresse : {{ contact.adresse|linebreaks }}<br/>
+    <img src="{{ contact.photo.url }}"/>
+{% endfor %}
