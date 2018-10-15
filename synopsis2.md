@@ -345,3 +345,66 @@ carte = _("%(suj)s %(ver)s : %(val)s %(col)s") % {
 {% blocktrans with pseudo=user.username context "lien de parenté" %}
 Les fils de {{ pseudo }}
 {% endblocktrans %}
+
+## les fichiers .po
+=> gettext utiliser des traductions dont l'extension est .po (Portable Object File)
+=> chaque langue aura son dossier avec ses fichiers . po
+=> il faut creer un dossier locale qui contiendra l'ensemble des traductions, soit au sein du projet, soit dans les applications si on veut lier traduction et application
+=> dans settings :
+LOCALE_PATHS = (
+    os.path.join(BASE_DIR, '/locale/'),
+)
+=> on peut generer les fichiers po par Django
+django-admin makemessages -l en  => locale/en/LC_MESSAGES | python ./manage.py pour ancienne version
+django-admin makemessages --all  => pour tout mettre à jour
+=> dans le fichier msgid : chaine à traduire, msgstr : à remplir pour une traduction courte
+msgid "French"
+msgstr ""
+=> pour des messages plus longs, debut par une chaine vide
+msgid ""
+"Ici, nous parlons de tout et de rien, mais surtout de rien. Mais alors, vous "
+"allez me demandez quel est le but de ce paragraphe ? Je vais vous répondre "
+"simplement : il n'en a aucun."
+msgstr ""
+"Here, we talk about everything and anything, but mostly nothing. So, you "
+"will ask me what is the purpose of this paragraph... I will answer "
+"simply : none, it's useless!"
+=> pour le pluriel/singulier [0] est le singulier, [1] le pluriel
+msgid "… et selon mes informations, vous avez %(nb)s chat %(color)s !"
+msgid_plural ""
+"… et selon mes informations, vous avez %(nb)s chats %(color)ss !"
+msgstr[0] ""
+msgstr[1] ""
+=> une fois complétes ou modifiés, les fichiers .po doivent être compilés dans un format compris par gettext, les .mo (machine object file)
+django-admin compilemessages
+
+## choix de langues
+=> methode 1 : django.utils.translation.activate
+=> Cette fonction s'utilise surtout en dehors des vues et des templates et est plutôt destinée à la gestion de la langue dans des crons par exemple. Elle permet d'assigner la langue à utiliser pour le thread actuel
+from django.utils import translation
+from django.utils.translation import ugettext as _
+translation.activate('en')
+print _("Bonjour les nouveaux !")
+Hello newbies!      __
+=> methode 2 : assigner la langue dans une vue générique , censée recevoir les arguments provenant d'un formulaire
+=> directive de routage
+url(r'^i18n/', include('django.conf.urls.i18n')),
+=> template
+{% load i18n %}
+<h1>Changer de langue</h1>
+{% trans "Bonjour les nouveaux !" %}
+
+<form action="/i18n/setlang/" method="post">
+    {% csrf_token %}
+    <input name="next" type="hidden" value="{% url 'accueil' %}" />
+
+    <select name="language">
+    {% for lang in LANGUAGES %}
+        <option value="{{ lang.0 }}">{{ lang.1 }}</option>
+    {% endfor %}
+    </select>
+    <input type="submit" />
+</form>
+=> Rendre ce template accessible depuis une vue classique ou une vue générique et modifier le paramètre next du formulaire qui indique vers quelle URL l'utilisateur doit être redirigé après avoir validé le formulaire. sinon l'utilisateur sera redirigé d'office vers/.
+
+La liste des langues  défini au début sera affichée dans le formulaire et le choix envoyé à Django après la soumission du formulaire. Vous verrez dès lors la phrase « Bonjour les nouveaux ! » traduite dans la langue que vous avez choisie.

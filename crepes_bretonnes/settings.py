@@ -134,6 +134,11 @@ LANGUAGES = (
     ('en', gettext('English')),
 )
 
+# chemins pour le dossier de translation
+LOCALE_PATHS = (
+    os.path.join(BASE_DIR, '/locale/'),
+)
+
 USE_TZ = True
 
 
