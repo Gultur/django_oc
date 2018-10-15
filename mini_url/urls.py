@@ -2,7 +2,7 @@ from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
-    path('liste', views.lister_mini_urls, name='liste_url'),
+    path('liste/<int:page>', views.lister_mini_urls, name='liste_url'),
     # affichage formulaire en dur
     path('formulaire', views.creer_mini_url, name='formulaire_mini_urls'),
     # affichage formulaire via vue générique

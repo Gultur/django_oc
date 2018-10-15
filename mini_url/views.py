@@ -1,16 +1,25 @@
 from django.shortcuts import (render, get_object_or_404, redirect)
 from django.views.generic import (CreateView, UpdateView, DeleteView)
 from django.urls import reverse_lazy
+from django.core.paginator import Paginator, EmptyPage
 from .models import MiniURL
 from .forms import MiniURLForm
 
 
-def lister_mini_urls(request):
+def lister_mini_urls(request, page=1):
     mini_urls = MiniURL.objects.order_by('-nombre_acces')
+    paginator = Paginator(mini_urls, 2)
+
+    try:
+        minis = paginator.page(page)
+    except EmptyPage:
+        # on renvoie la dernière pas si la page indiquée n'existe pas
+        minis = paginator.page(paginator.num_pages)
+
     return render(request, 'mini_url/mini_urls.html', {
-        'mini_urls': mini_urls
-    }  # on pourrait mettre uniquement local() au lieu du dictionnaire
-    )
+        'mini_urls': minis
+        }  # on pourrait mettre uniquement local() au lieu du dictionnaire
+                 )
 
 
 def creer_mini_url(request):

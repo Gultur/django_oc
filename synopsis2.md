@@ -1,41 +1,3 @@
-Quel est l’avantage (toujours vrai) d’une vue générique TemplateView ?
-Cela permet d’écrire une vue simple, sans données, directement dans le urls.py    
-
-Quel est le nom du template par défaut dans le cadre d’une ListView ?   
-<app>/<model>_list.html __
-
-Quelle est l’utilité de reverse_lazy ?
-Cette fonction permet de récupérer l’URL d’une vue à l’exécution plutôt qu’à l’initialisation du code    
-
-Quel est l’inverse de la requête suivante ?
-Eleve.objects.exclude(classe="1ere", sexe="H")
-
-Que fait cette requête ?
-Elle renvoie le nombre d’élèves dont le nom ne commence pas par "F" et la moyenne globale de ceux-ci  
-
-Combien de tables SQL seront créées avec les modèles suivants ?
-3
-
-En reprenant les modèles de la question précédente, laquelle de ces lignes est incorrecte ? On suppose que l’on récupère une entrée de la base à chaque fois sans problème
-AdministrationPublique.objects.get(id=1).maires sans problème.
-
-Quel tag permet de charger une librairie de tags et filtres contenue dans blog_extras.py ?   
-{% load blog_extras %}
-
-Comment est représenté un filtre avec paramètre ?
-Par une fonction avec 2 arguments : valeur et arg
-
-Qu’affichera {{ taux_change }} dans accueil.html ?
-Rien du tout
-
-Quelles sont les deux étapes à implémenter pour la réalisation d’un tag ?
-La fonction de compilation et le rendu
-
-Qu’est-ce qu’il n’est pas possible de faire avec un signal ?
-Incrémenter un compteur à chaque utilisation d’un filtre  
-
-Quand est exécuté un middleware ?
-Ça dépend du middleware    
 
 # les utilisateurs
 ## modèle user de base
@@ -172,3 +134,133 @@ user = User.objects.get(username="Mathieu")
 user.groups.add(group)
 
 Une fois cela fait, l'utilisateur « Mathieu » dispose de toutes les permissions attribuées au groupe « Les gens géniaux ». Il conserve également les permissions qui lui ont été attribué spécifiquement. La méthode user.has_perm('app.nom_perm') vérifie donc si l'utilisateur à cette permission ou s'il appartient à un groupe ayant la permission app.nom_perm.
+
+# les messages / notifications
+=> système implémenté dans django, dans settings.py
+'django.contrib.messages.middleware.MessageMiddleware', dans MIDDLEWARE
+'django.contrib.messages', dans INSTALLED_APPS
+'django.contrib.messages.context_processors.messages' dans TEMPLATE_CONTEXT_PROCESSORS (si la variable est absente, c'est par défaut)
+=> Les message sont plusieurs niveaux d'"importance"', caractérisée par un entier  :
+- DEBUG - 10 : phase de developpement uniquement, DEBUG=True dans settings.py
+- INFO - 20 : information pour l'utilisateur
+- SUCCESS - 25 : confirmation qu'une action s'est bien déroulée
+- WARNING - 30 : pas d'erreur rencontrée, mais possibilité qur'il y en ait rapidement
+- ERROR - 40 : une action ne s'est pas déroulée comme prévu
+=> chaque niveau à un attribut "tags" associé (en minuscule), utile pour le CSS
+=> depuis une vues
+from django.contrib import messages
+messages.add_message(request, messages.INFO, 'Bonjour visiteur !')
+=> il existe des raccourcis pour les niveaux par défaut
+messages.debug(request, '%s requêtes SQL ont été exécutées.' % compteur)
+messages.info(request, 'Rebonjour !')
+messages.success(request, 'Votre article a bien été mis à jour.')
+messages.warning(request, 'Votre compte expire dans 3 jours.')
+messages.error(request, 'Cette image n\'existe plus.')
+=> le context_processers envoie une variable "messages" par défaut, l'affichage est dont simple dans le template
+=> "messages" pouvant contenir plusieurs notifications il est necessaire de l'iterer
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+=> pour ajouter un niveau il suffit de creer une constante avec une valeur entière, on peut mettre un nom de tag en argument :
+CRITICAL = 50
+messages.add_message(request, CRITICAL, 'Une erreur critique est survenue.', extra_tags="fail")
+=> on peut spécifier une constante MESSAGE_LEVEL , affecté à un entier, dans le fichiers settings pour définir une valeur minimale des messages à envoyer
+=> c'est aussi faisable avec sur une vue en particulier  :
+messages.set_level(request, messages.DEBUG)
+=> dans le cas d'une application destinée à être incorporé dans des projets, sans être sur que le systeme de emssage soit présent, on peut les faire échouer silencieusement:
+messages.info(request, 'Message à but informatif.', fail_silently=True)
+
+# le cache
+## systeme de cache
+=> django dispose de plusieurs système de cache, sa configuration se faire grace à la constance  CACHES dans le fichier settings.py
+- cache dans les fichiers : système enregistrant dans es fichiers sur le serveur, pour chaque valeur dans le cache , django va crééer un fichier et enregistrer le contenu de la donnée, en s'aidant du module pickle:
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
+=> location doit pointer vers un dossier et non un fichier (chemin absolu)
+-  cache dans la mémoire : les données sont enregistrées dans la mémoire vive
+'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+'LOCATION': 'cache_crepes'
+=> le nom pour LOCATION doit être différent pour chaque projet django tournant sur un même serveur
+=> c'est le cache par défaut de django  en développement, il n'est pas performant au nveau de la gestion de mémoire
+- cache en base de données : il faut d'abord crééer une table spécifique dans la bases de données :
+python manage.py createcachetable [nom_table_cache]
+=> et il faut le spécifier dans le settings.py
+'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+'LOCATION': 'nom_table_cache',
+=> ce système peut être rapide et pratique mais il necessite de dedier un serveur physique pour la base de données
+- en utilisant Memcached : c'est un système indépendant de django. Il faut lancer un programme responsable du cache, à qui Django enverra les données / les recuperera
+=> ce système est plus efficace bien que necessitant un deploiement, il enregistre aussi en mémoire vive mais de façon plus efficace.
+=> Memcached n'existe que sous linux :
+(dans un terminal)
+apt-get install memcached
+memcached -d -m 512 -l 127.0.0.1 -p 11211 / -d demon -m taille maximum Mo -l adresse ip -p port
+(dans django)
+'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+'LOCATION': '127.0.0.1:11211',
+=> location est l'adresse / port sur laquelle tourne memcached
+- le cache inexistant : il active juste le système de cache , sans s'en servir
+'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+## techniques de mise en cache
+- cache par vue :  dès que le rendu d'une vue est calculé il est mis en cache, cela permet de recherche la page dans le cache sans rappeler la vue.
+=> cette mise en cache se fait via un décorateur, avec comme paramètre la durée en seconde
+from django.views.decorators.cache import cache_page
+
+@cache_page(60 * 15)
+def lire_article(request, id):
+    article = Article.objects.get(id=id)
+=> chaque url aura sa propre mise en cache, il est possible de spécifier ce cache dans le fichier urls, il est du coup possible de l'affecter à des vues génériques , la vue doit etre sous forme de référence et non de chaine de caractère
+from django.views.decorators.cache import cache_page
+from . import views
+
+urlpatterns = [
+    re_path(r'^article/(\d{1,4})/$', cache_page(60 * 15)(views.lire_article)),
+]
+- cache dans les templates : en utlisant un tag {% cache %}, il doit être précédemment chargé par un {% load cache %}, ce tag prendre deux arguments au minimum, la durée d'expiration en seconde et le nom de la valeur/clé en cache
+{% load cache %}
+{% cache 500 carrousel %}
+    # mon carrousel
+{% endcache %}
+=> on peut personnaliser la mise en cache en utilisant une clé dépendant de l'utilisateur, ex {% cache 500 user.username %}
+- mise en cache bas niveau : il permet une mise en cache de variables bien récises. on utilise le module django.core.cache , partuculièrement des fonctions de l'objet cache. Objet qui se comporte comme un dictionnaire
+from django.core.cache import cache
+cache.set('ma_cle', 'Coucou !', 30)
+cache.get('ma_cle')
+'Coucou !'
+=> set(clé, valeur, [durée  / optionnel]) stocke en cache, ecrase si déjè présente
+=> get(clé, [valeur par defaut si clé non existante / optionnel])
+=> add(clé, valeur) ajoute une clé uniquement si elle est absente
+=> set_many, get_many permettent de gerer plusieurs variables
+=> delete(cle) supprime du cache
+=> clear() vide le cache
+=> incr et decr permette d'incrementer ou de decrementer un nombre dans le cache sans passer par get puis set
+
+# pagination
+=> c'est le fait de diviser une liste d'objet en plusieurs pages
+=> Django fournit une classe nommée Paginator qui effectue la pagination. Elle se situe dans le module django.core.paginator
+=> le paginator commence à 1  et non 0
+=> plusieurs exceptions peuvent être renvoyés selon les cas (argument not int, page vide)
+=> paramètres optionnels du Paginator
+- orphans=int : indique le nombre minimum d'objet à afficher dans la dernière page, si ce n'est pas le cas, ils sont reportés sur la page précédente
+- allow_empty_first_page=True/False : permet de lancer une exception si la première page est vide
+=> Des methodes de paginator :
+- p = Paginator(liste, nombre_element_par_page)
+- p.count : nombre d'objets, p.num_pages : nombre de page necessaire, p.page_range : la liste des pages
+- page1 = p.page(1) => crée un objet Page
+- page1.object_list : contenu de la page, page1.has_next()/has_previous : indique s'il y a une page suivante/precedente
+=> pour l'utiliser il suffit d'importer le paginator et de l'initialiser dans une view
+from django.core.paginator import Paginator, EmptyPage
+paginator = Paginator(minis_list, 5)  # 5 liens par page
+try (on recupere les élements de la page)/ except EmptyPage
+=> dans le template, il suffit d'utiliser les attribut has_previous/has_next sur la liste d'éléments récupérés
+=> elts.number : indique le numéro de page actuelle, previous_page_number/next_page_number : numéro page précendent/suivante
+
++> il est possible de prévoir un template spécifique pour les paginations et l'include par la suite
+{% include "pagination.html" with liste=minis view="liste_url" %}

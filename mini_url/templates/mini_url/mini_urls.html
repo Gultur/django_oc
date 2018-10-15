@@ -19,3 +19,15 @@
       <li>Aucune mini url.</li>
   {% endfor %}
 </ul>
+<div class="pagination">
+
+   {% if mini_urls.has_previous %}
+       <a href="{% url 'liste_url' mini_urls.previous_page_number %}">Précédente</a> -
+   {% endif %}
+   <span class="current">
+       Page {{ mini_urls.number }} sur {{ mini_urls.paginator.num_pages }}
+   </span>
+   {% if mini_urls.has_next %}
+       - <a href="{% url 'liste_url' mini_urls.next_page_number %}">Suivante</a>
+   {% endif %}
+</div>
