@@ -18,6 +18,10 @@ class Article(models.Model):
 
         verbose_name = "article"
         ordering = ['date']
+        permissions = (
+            ("commenter_article", "Commenter un article"),
+            ("marquer_article", "Marquer un article comme lu"),
+            )
 
     def __str__(self):
         """

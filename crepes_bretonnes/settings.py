@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'mini_url',
     'crepes_bretonnes',
     'stats',
+    'authentification',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,6 @@ STATICFILES_DIRS = (
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 # MEDIA_URL est utilisé lors de stockage externe au serveur
 MEDIA_URL = '/media/'
+
+# ajout de l'adresse de login par défaut
+LOGIN_URL = '/authentification/connexion/'

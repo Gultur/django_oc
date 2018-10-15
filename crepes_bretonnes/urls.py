@@ -17,11 +17,16 @@ from django.contrib import admin
 from django.urls import (path, include)
 from django.conf.urls.static import static
 from django.conf import settings
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('blog/', include('blog.urls')),
     path('mini_url/', include('mini_url.urls')),
+    path('authentification/', include('authentification.urls')),
+    path('connexion/', auth_views.LoginView.as_view(template_name='authentification/connexion.html')),
+    # les vues génériques de gestion utilisateur cherchent par defaut dans un dossier registration
+    path('accounts/', include('django.contrib.auth.urls'))
     # on inclut les fichiers urls des applications
 ]
 
