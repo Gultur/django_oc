@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('blog/', include('blog.urls')),
     path('mini_url/', include('mini_url.urls')),
+    path('i18napp/', include('i18napp.urls')),
     path('authentification/', include('authentification.urls')),
     path('connexion/', auth_views.LoginView.as_view(template_name='authentification/connexion.html')),
     # les vues génériques de gestion utilisateur cherchent par defaut dans un dossier registration

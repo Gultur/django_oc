@@ -264,3 +264,84 @@ try (on recupere les élements de la page)/ except EmptyPage
 
 +> il est possible de prévoir un template spécifique pour les paginations et l'include par la suite
 {% include "pagination.html" with liste=minis view="liste_url" %}
+
+# internationnalisation / i18n
+## settings
+=> utilisation de gettext
+=> dans settings.py USE_I18N permet d'activer l'internationalisation, USE_L10N permet d'automatiquement formater certaines données en fonction de la langue de l'utilisateur (dates,nombres..)
+=> à ajouter sous USE_L10N
+gettext = lambda x: x
+
+LANGUAGES = (
+   ('fr', gettext('French')),
+   ('en', gettext('English')),
+)
+=> il faut aussi ajouter un middleware : 'django.middleware.locale.LocaleMiddleware',
+=>  Django va tenter pour chaque visiteur de trouver la langue la plus adaptée en procédant par étape :
+- Dans un premier temps, il est possible de configurer les URL pour les préfixer avec la langue voulue. Si ce préfixe apparaît, alors la langue sera forcée.
+- Si aucun préfixe n'apparaît, le middleware vérifie si une langue est précisée dans la session de l'utilisateur.
+- En cas d'échec, le middleware vérifie dans les cookies du visiteur si un cookie nommé_language (défini par Django) existe.
+- En cas d'échec, il vérifie la requête HTTP et vérifie si l'en-tête Accept-Language est envoyé. Cet en-tête, envoyé par le navigateur du visiteur, spécifie les langues de prédilection, par ordre de priorité. Django essaie chaque langue une par une, selon celles disponibles dans notre projet.
+ - Enfin, si aucune de ces méthodes ne fonctionne, alors Django se rabat sur le paramètre LANGUAGE_CODE.
+
+Le second, le template context processor, nous permettra d'utiliser les fonctions de traduction, via des tags, dans nos templates.
+## vues et modèles
+### vues
+=> pour rendre traduisible les chaines de caractères dans les vues, on va appliquer une fonction à chaque vue
+=> utilisation de gettext, decomposé en plusieurs fonctions, certaines préfixées par u pour marquer la gestion de l'unicode (préférable)
+from django.utils.translation import ugettext as _
+=> cette methode est si utilisée qu'elle a souvent un alias " _ " pour des questions de lisiblités
+=> elle s'occupe de la traduction
+from django.utils.translation import ungettext
+=> permet de modifier les chaines pour le cas singulier/pluriel
+=> convention : pour faciliter le travail des traducteurs, on peut ajouter un commentaire avant une chaine de caractère pour expliciter le sens
+ # Translators: This message informs the user about how many books he can borrow
+=> il est possible aussi que deux mots soient identiques mais avec un sens différent, la fonction pgettext est là pour cela :
+from django.utils.translation import pgettext
+
+verbe = pgettext("verbe 'avoir'", "as")
+valeur = pgettext("carte de jeu", "as")
+carte = _("%(suj)s %(ver)s : %(val)s %(col)s") % {
+    "suj": _("tu"),
+    "ver": verbe,
+    "val": valeur,
+    "col": _("de trèfle")}            __
+
+### modeles
+=> la technique est  la même sauf qu'il faut utiliser ugettext_lazy au lieu de ugettext car on souhaite que la traduction soit effectuée à l'execution et non à la déclaration des classes, lors de la validation des modeles par le serveur. idem pour pgettext_lazy et ungettext_lazy
+
+## templates
+=> les tags utilisent en interne gettext
+=> il faut charger les tags d'internationalisation {% load i18n %} au debut des templates que l'on veut internationaliser
+=> tag {% trans %} permet de traduire une chaine de caracètre ou une variable
+<h2>{% trans "Contactez-nous !" %}</h2>
+<p>{% trans ma_variable %}</p>
+=> il est possible de generer une chaine sans l'afficher, pour la reutiliser dans le template
+{% trans "Contactez-nous" as titre %} ==> {{ titre }}
+=> il gère aussi le marqueur de context pour les homonymes
+{% trans "Est" context "Verbe être" %}
+{% trans "Est" context "Cardinalité" %}
+=> le tag {% blocktrans %}  / {% endblocktrans %} permet de faire des traductions plus complexes
+=> en incorporant des variables dans la chaine
+{% blocktrans %}Vous avez {{ age }} ans.{% endblocktrans %}
+=> Cependant, pour accéder à des expressions (attributs d'un objet, utilisation de filtres…), il faut déclarer ces expressions comme variables locales du bloc de traduction, avec le mot-clé with:
+{% blocktrans with nom=user.nom prenom=user.prenom nb_articles=panier|length %}
+    Vous êtes {{ prenom }} {{ nom }}. Vous avez {{ nb_articles }} articles dans votre panier.
+{% endblocktrans %}
+=> il gère aussi les pluriels
+- il faut préciser le nombre qui determine l'accord : count nombre=ma_variable
+- il faut declarer deux sous blocs pour singulier / pluriel
+{% blocktrans count nb=articles|length %}
+   Vous avez 1 article dans votre panier.
+{% plural %}
+   Vous avez {{ nb }} articles dans votre panier.
+{% endblocktrans %}
+=> with et le contexte sont aussi utilisables
+{% blocktrans with total=commande.total count nb=commande.articles|length %}
+   Vous avez 1 article dans votre panier. Prix total : {{ total }}
+{% plural %}
+   Vous avez {{ nb }} articles dans votre panier. Prix total : {{ total }}
+{% endblocktrans %}
+{% blocktrans with pseudo=user.username context "lien de parenté" %}
+Les fils de {{ pseudo }}
+{% endblocktrans %}

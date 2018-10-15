@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'crepes_bretonnes',
     'stats',
     'authentification',
+    'i18napp'
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'stats.middleware.stats_middleware',
+    'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'crepes_bretonnes.urls'
@@ -73,6 +75,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'crepes_bretonnes.context_processors.get_infos',
+                "django.template.context_processors.i18n",
             ],
         },
     },
@@ -118,9 +121,18 @@ LANGUAGE_CODE = 'fr'
 
 TIME_ZONE = 'UTC'
 
+# active l'internationnalisation
 USE_I18N = True
-
+# active le formatage de certaines données selon la langue de l'utilisateur
 USE_L10N = True
+
+gettext = lambda x: x
+
+
+LANGUAGES = (
+    ('fr', gettext('French')),
+    ('en', gettext('English')),
+)
 
 USE_TZ = True
 
